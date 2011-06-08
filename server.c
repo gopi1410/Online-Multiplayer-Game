@@ -1,65 +1,136 @@
-//USAGE: ./a.out port_number
+//USAGE: ./a.out port_number ip_address
 
 
 
-//#define DEST_IP "172.31.4.169"
+
+
+
+
+//#define DEST_IP "172.31.4.170"
+
 //#define DEST_PORT 5000
-#define BACKLOG 5
+
+
 
 #include <stdio.h>
-#include <stdlib.h>
+
 #include <string.h>
+
+#include <stdlib.h>
+
 #include <unistd.h>
+
 #include <sys/types.h>
+
 #include <sys/socket.h>
+
 #include <netinet/in.h>
+
 #include <netdb.h>
 
+
+
 void error(const char *msg)
+
 {
+
     perror(msg);
-    exit(1);
+
+    exit(0);
+
 }
 
+
+
 int main(int argc, char *argv[])
+
 {
-     int sockfd, newsockfd;
-     socklen_t clilen;
-     char buffer[256];
-     struct sockaddr_in serv_addr, cli_addr;
-     int n,DEST_PORT=atoi(argv[1]);
-     char end[]={"exit\n"};
-     sockfd = socket(AF_INET, SOCK_STREAM, 0);
-     if (sockfd < 0)
-        error("ERROR opening socket");
-     bzero((char *) &serv_addr, sizeof(serv_addr));
-     serv_addr.sin_family = AF_INET;
-     serv_addr.sin_addr.s_addr = INADDR_ANY; //uses self ip address
-     serv_addr.sin_port = htons(DEST_PORT);
-	 memset(&(serv_addr.sin_zero),'\0',8);
-     if (bind(sockfd, (struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0)
-		error("ERROR on binding");
-		
-	while(1)
-	{
-		listen(sockfd,BACKLOG);
-		clilen = sizeof(cli_addr);
-		newsockfd = accept(sockfd,(struct sockaddr *) &cli_addr,&clilen);
-		if (newsockfd < 0)
-			error("ERROR on accept");
-		bzero(buffer,256);
-		n = read(newsockfd,buffer,255);
-		if (n < 0)
-			error("ERROR reading from socket");
-		printf("Here is the message: %s\n",buffer);
-		n = write(newsockfd,"check",5);     //sending a random data when some message is listened at the specified port
-		if (n < 0)
-			error("ERROR writing to socket");
-		if(!strcmp(buffer,end))
-			break;
-	}
+
+	int sockfd,n;
+
+	struct sockaddr_in dest_addr; //struct to hold destination address
+
+	struct hostent *dest;
+
+	char buff[256];
+
+	char end[]={"exit\n"};
+	int DEST_PORT=atoi(argv[1]);
+	char *DEST_IP=argv[2];
+
 	
-	close(newsockfd);
+
+	while(1)
+
+	{
+
+		sockfd=socket(AF_INET,SOCK_STREAM,0);
+
+		if(sockfd<0)
+
+		{
+
+			error("ERROR opening socket");
+
+		}
+
+		dest=gethostbyname(DEST_IP);
+
+		if(dest==NULL)
+
+		{
+
+			fprintf(stderr,"ERROR!! Invalid IP");
+
+			exit(0);
+
+		}
+		bzero((char *) &dest_addr, sizeof(dest_addr));
+
+		//bcopy((char *)dest->h_addr,(char *)&dest_addr.sin_addr.s_addr,dest->h_length);
+		dest_addr.sin_family=AF_INET;
+		dest_addr.sin_port=htons(DEST_PORT);
+
+		dest_addr.sin_addr.s_addr=inet_addr(DEST_IP);
+
+		memset(&(dest_addr.sin_zero),'\0',8);
+				
+		if(connect(sockfd,(struct sockaddr *)&dest_addr,sizeof(dest_addr))<0)
+
+			error("Error!! Could not connect");
+
+		printf("Enter the message: ");
+
+		bzero(buff,256);
+
+		fgets(buff,255,stdin);
+
+		n=write(sockfd,buff,strlen(buff));
+
+		if (n < 0)
+
+			 error("ERROR writing to socket");
+
+		if(!strcmp(buff,end))
+
+			break;
+
+		bzero(buff,256);
+
+		n=read(sockfd,buff,255);
+
+		if (n < 0)
+
+			 error("ERROR reading from socket");
+
+		printf("%s\n",buff);
+
+		close(sockfd);
+
+	}
+
 	close(sockfd);
+
 	return 0;
+
 }
