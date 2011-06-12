@@ -1,4 +1,4 @@
-//USAGE: ./a.out port_number ip_address
+//USAGE: ./a.out ip_address
 
 
 
@@ -25,6 +25,7 @@ int main(int argc, char *argv[])
 	int sockfd,n;
 	struct sockaddr_in dest_addr; //struct to hold destination address
 	struct hostent *dest;
+	char buff1[256];
 	typedef struct sendfloat
 	 {
 		float alpha,phi,r;
@@ -33,7 +34,7 @@ int main(int argc, char *argv[])
 	 x* bptr;
 	 float a,b,c;
 	//char end[]={"exit\n"};
-	int DEST_PORT=atoi(argv[1]);
+	int DEST_PORT=5000;
 	char *DEST_IP=argv[2];
 	
 	while(1)
@@ -81,10 +82,11 @@ int main(int argc, char *argv[])
 		buff.phi=0.0;
 		buff.r=0.0;
 		bptr=&buff;
-		n=read(sockfd,&buff,255);
+		bzero(buff1,256);
+		n=read(sockfd,buff1,255);
 		if (n < 0)
 			 error("ERROR reading from socket");
-		printf("Here is the message: %f  %f  %f\n",bptr->alpha,bptr->phi,bptr->r);
+		printf("%s\n",buff);
 		close(sockfd);
 	}
 	close(sockfd);
