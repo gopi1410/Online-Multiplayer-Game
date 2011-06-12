@@ -25,10 +25,16 @@ int main(int argc, char *argv[])
 {
      int sockfd, newsockfd;
      socklen_t clilen;
-     char buffer[256];
+     typedef struct sendfloat
+	 {
+		float alpha,phi,r;
+	 } x;
+	 x buffer;
+	 x* bptr;
+	 float a,b,c;
      struct sockaddr_in serv_addr, cli_addr;
      int n,DEST_PORT=atoi(argv[1]);
-     char end[]={"exit\n"};
+     //char end[]={"exit\n"};
      sockfd = socket(AF_INET, SOCK_STREAM, 0);
      if (sockfd < 0)
         error("ERROR opening socket");
@@ -40,23 +46,40 @@ int main(int argc, char *argv[])
      if (bind(sockfd, (struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0)
 		error("ERROR on binding");
 		
+	listen(sockfd,BACKLOG);
+	
 	while(1)
 	{
-		listen(sockfd,BACKLOG);
+		a=0.0;b=0.0;c=0.0;
 		clilen = sizeof(cli_addr);
 		newsockfd = accept(sockfd,(struct sockaddr *) &cli_addr,&clilen);
 		if (newsockfd < 0)
 			error("ERROR on accept");
-		bzero(buffer,256);
-		n = read(newsockfd,buffer,255);
+		//bzero(buffer,256);
+		buffer.alpha=0.0;
+		buffer.phi=0.0;
+		buffer.r=0.0;
+		bptr=&buffer;
+		n = read(newsockfd,bptr,255);
 		if (n < 0)
 			error("ERROR reading from socket");
-		printf("Here is the message: %s\n",buffer);
-		n = write(newsockfd,"check",5);     //sending a random data when some message is listened at the specified port
+		printf("Here is the message: %f  %f  %f\n",bptr->alpha,bptr->phi,bptr->r);
+		printf("Enter the message: ");
+		//bzero(buffer,256);
+		//fgets(buffer,255,stdin);
+		buffer.alpha=0.0;
+		buffer.phi=0.0;
+		buffer.r=0.0;
+		scanf("%f%f%f",&a,&b,&c);
+		buffer.alpha=a;
+		buffer.phi=b;
+		buffer.r=c;
+		bptr=&buffer;
+		n = write(newsockfd,bptr,sizeof(buffer));
 		if (n < 0)
 			error("ERROR writing to socket");
-		if(!strcmp(buffer,end))
-			break;
+		//if(!strcmp(buffer,end))
+			//break;
 	}
 	
 	close(newsockfd);
